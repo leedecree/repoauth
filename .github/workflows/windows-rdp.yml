@@ -9,14 +9,22 @@ jobs:
     timeout-minutes: 360
 
     steps:
-      - name: 1. Setup SSH User
+      - name: 1. Setup SSH User & Add SSH Key
         run: |
-          sudo useradd -m -s /bin/bash cynetadmin
-          echo "cynetadmin:Cynet@2026" | sudo chpasswd
-          sudo usermod -aG sudo cynetadmin
-          # Enable Password Authentication in SSH
-          sudo sed -i 's/^PasswordAuthentication no/PasswordAuthentication yes/' /etc/ssh/sshd_config.d/*.conf || true
-          sudo sed -i 's/^PasswordAuthentication no/PasswordAuthentication yes/' /etc/ssh/sshd_config || true
+          # ساخت یوزر یکپارچه
+          sudo useradd -m -s /bin/bash hanimain
+          echo "hanimain:hanimainpassword" | sudo chpasswd
+          sudo usermod -aG sudo hanimain
+          
+          # اضافه کردن کلید عمومی مک برای ورود بدون پسورد
+          sudo mkdir -p /home/hanimain/.ssh
+          echo "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQC+0f8CLjTbhlmN1U4CQYrnCu7zRWQK4GMu40V3qCkJHSkCkrZDtlH7QYbsKTenGqha0xnARZ4N1OwYMR83DT6Q/czsBhn5XO4+vTMHBJonZ6v+exGQ98ZLrIVm6qPD5P5SiQUlBrnjGaoOYjSwv1wlxtcVcQVeTuZy/nIHBzjkosWWg3es+Pan9TjjvJtK05FVtNWUFXKOXeKT/lw7blzJYdY4g/ftd+GbFDZS+AugE7OPFR9+YgwwUo67Xe8HtSkbLpQ0yQAy4OLzAzR5ZjV7HPCgaPduCbFTutrI2Kt4OdKrpUaPbSvrpNPhVEQSUDioZ0m49fQ84w6nDQaCYVUp3WymGByZHV1ALZ7AkQuNKPSkidsbt7VqKPfNqNfJEFph2eMvWEjDsTXu4tRM1Q/3fecvT1PGQJd2PNQZDzs0uHu3KH+oIzm6Bmmb5V+bBHrmm5O3pbacnAJDuTAanx0ubAsOZMonK7+Sep7E0Q83liWD/4Z0okvtTTIR39bVrOs= hexa@sharif" | sudo tee /home/hanimain/.ssh/authorized_keys
+          sudo chown -R hanimain:hanimain /home/hanimain/.ssh
+          sudo chmod 700 /home/hanimain/.ssh
+          sudo chmod 600 /home/hanimain/.ssh/authorized_keys
+          
+          # فعال‌سازی بک‌آپ لاگین با پسورد (اختیاری جهت اطمینان)
+          sudo sed -i 's/^#*PasswordAuthentication.*/PasswordAuthentication yes/' /etc/ssh/sshd_config
           sudo systemctl restart ssh
 
       - name: 2. Install & Connect Tailscale VPN
@@ -33,8 +41,8 @@ jobs:
           echo "  >>> LINUX SERVER IS READY! <<<"
           echo "  Tailscale IP : $TS_IP"
           echo "  Username     : hanimain"
-          echo "  Password     : hanimainpassword"
-          echo "  >> SSH Command: ssh cynetadmin@$TS_IP"
+          echo "  Login Mode   : Passwordless (Mac SSH Key)"
+          echo "  >> SSH Command: ssh hanimain@$TS_IP"
           echo "=================================================="
 
       - name: 3. Keep Server Alive (6 Hours)
